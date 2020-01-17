@@ -10,7 +10,7 @@ const findBy = (filter) => {
 };
 
 const findById = (id) => {
-    return db("users").where({id}).first();
+    return db("users").where({id}).first("id", "username");
 };
 
 const add = async (user) => {

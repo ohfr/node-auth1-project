@@ -5,6 +5,8 @@ const express = require("express");
 
 const router = express.Router();
 
+const restrictedCookies = require("../Middleware/restricted");
+
 const restricted = () => {
     return async (req, res,next) => {
         try {
@@ -35,7 +37,7 @@ const restricted = () => {
 };
 
 
-router.get("/users", restricted(), async (req, res, next) => {
+router.get("/users", restrictedCookies(), async (req, res, next) => {
     try {
         res.json(await db.find());
     } catch(err) {
@@ -78,7 +80,9 @@ router.post("/login", async (req, res, next) => {
       const passwordValid = bcrypt.compareSync(password, user.password);
 
       if (user && passwordValid) {
-          res.status(200).json({message: "Logged In"});
+        req.session.user = user;
+
+        res.status(200).json({message: "Logged In"});
       } else {
           res.status(401).json({message: "Invalid Credentials"});
       };
@@ -91,10 +95,19 @@ router.post("/login", async (req, res, next) => {
 // Register Route
 router.post("/register", async (req, res, next) => {
     try {
-        res.json(await db.add(req.body));
+        res.status(201).json(await db.add(req.body));
     } catch(err) {
         next(err);
     };
 });
 
+router.get("/logout", restrictedCookies(), async (req, res, next) => {
+    req.session.destroy((err) => {
+        if (err) {
+            next(err);
+        } else {
+            res.json({message: "You are logged out"});
+        }
+    })
+})
 module.exports = router;
